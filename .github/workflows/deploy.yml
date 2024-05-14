@@ -143,8 +143,8 @@ jobs:
       - name: Deploy
         uses: easingthemes/ssh-deploy@main
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          REMOTE_HOST: ${{ secrets.SSH_HOST_AWS }}
+          SSH_PRIVATE_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          REMOTE_HOST: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           REMOTE_USER: ${{ secrets.USERNAME }}
           SOURCE: "build/"
           TARGET: "/var/www/html/"
@@ -154,5 +154,6 @@ jobs:
           SCRIPT_AFTER: |
             whoami
             ls -al
+          run: terraform apply -auto-approve
             echo $RSYNC_STDOUT
 
