@@ -1,0 +1,65 @@
+version: '3.7'
+services:
+  db:
+    image: postgres:12
+    environment:
+      POSTGRES_USER: ckan
+      POSTGRES_PASSWORD: ckan
+      POSTGRES_DB: ckan
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  solr:
+    image: solr:8
+    volumes:
+      - solr_data:/var/solr/data
+    entrypoint:
+      - docker-entrypoint.sh
+      - solr-precreate
+      - ckan
+
+  redis:
+    image: redis:alpine
+
+  ckan:
+    # command: >
+    #   /bin/bash -c "
+    #     wait-for-it solr:8983 -- echo 'Solr is up and running';"
+  
+    image: keitaro/ckan:2.9
+    depends_on:
+      - db
+      - solr
+      - redis
+    ports:
+      - "5000:5000"
+    networks:
+      - backend
+    environment:
+      CKAN_SQLALCHEMY_URL: postgresql://ckan:ckan@db/ckan
+      CKAN_SOLR_URL: http://solr:8983/solr/ckan
+      CKAN_REDIS_URL: redis://redis:6379/1
+      CKAN_SITE_URL: http://localhost:5000
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./certs:/etc/ssl/certs
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - ckan
+    command: [nginx, '-g', 'daemon off;']
+
+volumes:
+  postgres_data:
+  solr_data:
+networks:
+  backend:
+    driver: bridge
+    external:
+      name: auth_cicd_backend
